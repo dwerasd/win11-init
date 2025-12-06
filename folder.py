@@ -553,6 +553,7 @@ def main():
 사용 예시:
   python folder.py --list                         경로 목록
   python folder.py --backup "E:\\backup"          백업 실행 (증분 백업)
+  python folder.py "E:\\backup"                   백업 실행 (--backup 생략 가능)
   python folder.py --restore "E:\\backup"         전체 복구
   python folder.py --restore "E:\\backup\\NPKI"   선택 복구
   python folder.py --add "C:\\경로"               경로 추가
@@ -590,6 +591,13 @@ def main():
         help="등록된 백업 경로 목록 표시"
     )
     
+    parser.add_argument(
+        "path",
+        nargs="?",
+        metavar="PATH",
+        help="백업 경로 (--backup 옵션 없이 경로만 입력 시 백업 수행)"
+    )
+    
     args = parser.parse_args()
     
     # 아무 옵션도 없으면 도움말 표시
@@ -607,6 +615,9 @@ def main():
         backup(args.backup)
     elif args.restore:
         restore(args.restore)
+    elif args.path:
+        # 경로만 입력 시 --backup으로 처리
+        backup(args.path)
 
 
 if __name__ == "__main__":
