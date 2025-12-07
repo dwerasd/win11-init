@@ -3,6 +3,7 @@
 #
 # 백업 및 복구 프로그램
 # 사용법:
+#     마지막 경로로 백업: python folder.py
 #     백업: python folder.py --backup "E:\backup"
 #     전체 복구: python folder.py --restore "E:\backup\20251206"
 #     선택 복구: python folder.py --restore "E:\backup\20251206\NPKI"
@@ -138,7 +139,20 @@ def load_config():
     if CONFIG_FILE.exists():
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {"backup_paths": [], "description": "백업할 폴더 경로 목록입니다."}
+    return {"backup_paths": [], "description": "백업할 폴더 경로 목록입니다.", "last_backup_destination": None}
+
+
+# 마지막 백업 경로 가져오기
+def get_last_backup_destination():
+    config = load_config()
+    return config.get("last_backup_destination")
+
+
+# 마지막 백업 경로 저장하기
+def save_last_backup_destination(destination):
+    config = load_config()
+    config["last_backup_destination"] = os.path.normpath(destination)
+    save_config(config)
 
 
 # 설정 파일 저장
@@ -272,6 +286,9 @@ def backup(destination):
     
     # 백업 폴더 생성 (날짜 폴더 없이 바로 목적지에 백업)
     backup_folder = os.path.normpath(destination)
+    
+    # 마지막 백업 경로 저장
+    save_last_backup_destination(destination)
     
     try:
         os.makedirs(backup_folder, exist_ok=True)
@@ -551,6 +568,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 사용 예시:
+  python folder.py                                마지막 백업 경로로 백업
   python folder.py --list                         경로 목록
   python folder.py --backup "E:\\backup"          백업 실행 (증분 백업)
   python folder.py "E:\\backup"                   백업 실행 (--backup 생략 가능)
@@ -600,9 +618,15 @@ def main():
     
     args = parser.parse_args()
     
-    # 아무 옵션도 없으면 도움말 표시
+    # 아무 옵션도 없으면 마지막 백업 경로로 백업 시도
     if len(sys.argv) == 1:
-        parser.print_help()
+        last_dest = get_last_backup_destination()
+        if last_dest:
+            print(f"마지막 백업 경로 사용: {last_dest}")
+            backup(last_dest)
+        else:
+            print("마지막 백업 경로가 없습니다. 경로를 지정해주세요.")
+            parser.print_help()
         return
     
     if args.add:
